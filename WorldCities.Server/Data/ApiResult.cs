@@ -16,6 +16,9 @@ namespace WorldCities.Server.Data
         public bool HasNextPage { get { return ((PageIndex + 1) < TotalPages); } }
         public string? SortColumn { get; set; }
         public string? SortOrder { get; set; }
+        public string? FilterColumn { get; set; }
+        public string? FilterQuery { get; set; }
+
 
         // Constructor
         private ApiResult(
@@ -24,7 +27,9 @@ namespace WorldCities.Server.Data
             int pageIndex,
             int pageSize,
             string? sortColumn,
-            string? sortOrder)
+            string? sortOrder,
+            string? filterColumn,
+            string? filterQuery)
         {
             Data = data;
             PageIndex = pageIndex;
@@ -33,6 +38,8 @@ namespace WorldCities.Server.Data
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             SortColumn = sortColumn;
             SortOrder = sortOrder;
+            FilterColumn = filterColumn;
+            FilterQuery = filterQuery;
         }
                 
         // Methods
@@ -41,8 +48,18 @@ namespace WorldCities.Server.Data
             int pageIndex,
             int pageSize,
             string? sortColumn = null,
-            string? sortOrder = null)
+            string? sortOrder = null,
+            string? filterColumn = null,
+            string? filterQuery = null)
         {
+            if (!string.IsNullOrEmpty(filterColumn)
+                && !string.IsNullOrEmpty(filterQuery)
+                && isValidProperty(filterColumn))
+            {
+                source = source.Where(
+                    string.Format("{0}.StartsWith(@0)", filterColumn), filterQuery);
+            }
+
             var count = await source.CountAsync();
 
             if (!string.IsNullOrEmpty(sortColumn) && isValidProperty(sortColumn))
@@ -62,7 +79,9 @@ namespace WorldCities.Server.Data
                 pageIndex,
                 pageSize,
                 sortColumn,
-                sortOrder);
+                sortOrder,
+                filterColumn,
+                filterQuery);
         }
 
         public static bool isValidProperty(
